@@ -11,6 +11,7 @@ public:
 
     void process(float *left, float *right, int num_samples);
     void set_enabled(bool enabled);
+    void set_freeze(bool freeze_on);
 
 private:
     struct Comb {
@@ -30,6 +31,7 @@ private:
 
     float sample_rate_;
     bool enabled_;
+    bool frozen_;
 
     std::vector<Comb> combs_left_;
     std::vector<Comb> combs_right_;
@@ -39,6 +41,9 @@ private:
     std::vector<float> predelay_buffer_left_;
     std::vector<float> predelay_buffer_right_;
     int predelay_index_;
+
+    std::vector<float> original_feedback_left_;
+    std::vector<float> original_feedback_right_;
 };
 
 #endif // REVERB_H

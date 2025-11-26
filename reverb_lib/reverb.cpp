@@ -22,7 +22,7 @@ namespace {
     const float COMB_GAIN[] = {0.62f, 0.60f, 0.58f, 0.55f, 0.52f, 0.50f, 0.48f, 0.45f};
 }
 
-Reverb::Reverb(float sample_rate) : sample_rate_(sample_rate), enabled_(true), predelay_index_(0) {
+Reverb::Reverb(float sample_rate) : sample_rate_(sample_rate), enabled_(true), frozen_(false), predelay_index_(0) {
     init_filters();
 }
 
@@ -41,6 +41,9 @@ void Reverb::init_filters() {
     // Comb filters
     combs_left_.resize(NUM_COMB);
     combs_right_.resize(NUM_COMB);
+    original_feedback_left_.resize(NUM_COMB);
+    original_feedback_right_.resize(NUM_COMB);
+
     for (int i = 0; i < NUM_COMB; ++i) {
         int comb_delay_l = static_cast<int>(COMB_DLY_L_48k[i] * sr_ratio);
         int comb_delay_r = static_cast<int>(COMB_DLY_R_48k[i] * sr_ratio);
@@ -54,11 +57,11 @@ void Reverb::init_filters() {
         combs_right_[i].damp = DAMP;
         combs_right_[i].last = 0.0f;
 
-        // Calculate feedback
+        // Calculate and store original feedback
         float g = powf(10.f, -3.f * comb_delay_l / sample_rate_ / COMB_T60[i]);
-        combs_left_[i].feedback = (g > 0.98f) ? 0.98f : g;
+        original_feedback_left_[i] = combs_left_[i].feedback = (g > 0.98f) ? 0.98f : g;
         g = powf(10.f, -3.f * comb_delay_r / sample_rate_ / COMB_T60[i]);
-        combs_right_[i].feedback = (g > 0.98f) ? 0.98f : g;
+        original_feedback_right_[i] = combs_right_[i].feedback = (g > 0.98f) ? 0.98f : g;
     }
 
     // All-pass filters
@@ -78,6 +81,23 @@ void Reverb::set_enabled(bool enabled) {
     enabled_ = enabled;
 }
 
+void Reverb::set_freeze(bool freeze_on) {
+    if (freeze_on == frozen_) return;
+
+    frozen_ = freeze_on;
+    if (frozen_) {
+        for (int i = 0; i < NUM_COMB; ++i) {
+            combs_left_[i].feedback = 1.0f;
+            combs_right_[i].feedback = 1.0f;
+        }
+    } else {
+        for (int i = 0; i < NUM_COMB; ++i) {
+            combs_left_[i].feedback = original_feedback_left_[i];
+            combs_right_[i].feedback = original_feedback_right_[i];
+        }
+    }
+}
+
 void Reverb::process(float* in_left, float* in_right, int num_samples) {
     if (!enabled_) {
         return;
@@ -87,13 +107,17 @@ void Reverb::process(float* in_left, float* in_right, int num_samples) {
         float dry_left = in_left[i];
         float dry_right = in_right[i];
 
-        // Pre-delay
+        // Pre-delay and input muting for freeze
         float pre_left = predelay_buffer_left_[predelay_index_];
         float pre_right = predelay_buffer_right_[predelay_index_];
-        predelay_buffer_left_[predelay_index_] = dry_left;
-        predelay_buffer_right_[predelay_index_] = dry_right;
+        predelay_buffer_left_[predelay_index_] = frozen_ ? 0.0f : dry_left;
+        predelay_buffer_right_[predelay_index_] = frozen_ ? 0.0f : dry_right;
         if (++predelay_index_ >= predelay_buffer_left_.size()) {
             predelay_index_ = 0;
+        }
+
+        if (frozen_) {
+            pre_left = pre_right = 0.0f;
         }
 
         // Comb filters
@@ -133,8 +157,10 @@ void Reverb::process(float* in_left, float* in_right, int num_samples) {
             wet_right = output_r;
         }
 
-        // Mix and output
-        in_left[i] = (dry_left * DRY + wet_left * WET) * MASTER_GAIN;
-        in_right[i] = (dry_right * DRY + wet_right * WET) * MASTER_GAIN;
+        // Mix and output, muting dry signal when frozen
+        float final_dry_left = frozen_ ? 0.0f : dry_left * DRY;
+        float final_dry_right = frozen_ ? 0.0f : dry_right * DRY;
+        in_left[i] = (final_dry_left + wet_left * WET) * MASTER_GAIN;
+        in_right[i] = (final_dry_right + wet_right * WET) * MASTER_GAIN;
     }
 }
