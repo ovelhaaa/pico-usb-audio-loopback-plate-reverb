@@ -19,9 +19,12 @@ extern "C" {
 #define CFG_TUD_CDC    0
 #define CFG_TUD_MSC    0
 #define CFG_TUD_HID    0
-#define CFG_TUD_MIDI   0
+#define CFG_TUD_MIDI   1
 #define CFG_TUD_AUDIO  1
 #define CFG_TUD_VENDOR 0
+
+#define CFG_TUD_MIDI_RX_BUFSIZE 64
+#define CFG_TUD_MIDI_TX_BUFSIZE 64
 
 #define CFG_TUD_AUDIO_ENABLE_INTERRUPT_EP                    1
 #define CFG_TUD_AUDIO_FUNC_1_DESC_LEN                        TUD_AUDIO_INTERFACE_STEREO_DESC_LEN

@@ -1,0 +1,9 @@
+#pragma once
+
+enum {
+    FX_PARAM_WET_MIX = 0,
+    FX_PARAM_DRY_MIX,
+    FX_PARAM_GRAIN_LENGTH,
+    FX_PARAM_GRAIN_DENSITY,
+    FX_PARAM_COUNT
+};

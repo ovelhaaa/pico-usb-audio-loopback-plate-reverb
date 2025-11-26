@@ -7,15 +7,20 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "bootsel_button.h"
 #include "bsp/board_api.h"
 #include "fx.h"
+#include "bootsel_button.h"
 #include "hardware/clocks.h"
 #include "led.h"
 #include "pico/stdlib.h"
 #include "ringbuffer.h"
 #include "tusb.h"
 #include "usb_descriptors.h"
+#include "fx.h"
+
+#define F32_Q15(x) ((int16_t)((x) * 32767.f + 0.5f))
+
+void midi_task(void);
 
 static ringbuffer_t rx_buffer = {0};
 static ringbuffer_t tx_buffer = {0};
@@ -48,8 +53,6 @@ void audio_task(void) {
         current_sampling_rate = sampling_rate;
         return;
     }
-
-    fx_set_enable(bb_get_bootsel_button());
 
     const size_t rx_samples = FRAME_LENGTH * 2;
     const size_t frame_bytes = FRAME_LENGTH * sizeof(int32_t) * 2;
@@ -129,10 +132,27 @@ int main(void) {
     board_init_after_tusb();
 
     fx_init();
+    bb_init();
 
     while (1) {
         tud_task();
+        midi_task();
         audio_task();
         led_task();
+        fx_set_enable(bb_get_bootsel_button());
+    }
+}
+
+void midi_task(void) {
+    uint8_t packet[4];
+    while (tud_midi_stream_read(packet, sizeof(packet))) {
+        uint8_t msg_type = packet[1] & 0xF0;
+        uint8_t channel = packet[1] & 0x0F;
+        if (msg_type == 0xB0) { // Control Change
+            uint8_t controller = packet[2];
+            uint8_t value = packet[3];
+            int16_t q15_val = F32_Q15(value / 127.0f);
+            fx_set_param(controller, q15_val);
+        }
     }
 }
