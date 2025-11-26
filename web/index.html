@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Granular Freeze Control</title>
+</head>
+<body>
+    <h1>Granular Freeze Control</h1>
+    <div id="midi-interface">
+        <label for="wet-mix">Wet Mix:</label>
+        <input type="range" id="wet-mix" min="0" max="127" value="64" data-cc="0"><br>
+
+        <label for="dry-mix">Dry Mix:</label>
+        <input type="range" id="dry-mix" min="0" max="127" value="64" data-cc="1"><br>
+
+        <label for="grain-length">Grain Length:</label>
+        <input type="range" id="grain-length" min="0" max="127" value="64" data-cc="2"><br>
+
+        <label for="grain-density">Grain Density:</label>
+        <input type="range" id="grain-density" min="0" max="127" value="64" data-cc="3"><br>
+    </div>
+
+    <script>
+        let midiOutput = null;
+
+        function sendMidiMessage(controller, value) {
+            if (midiOutput) {
+                midiOutput.send([0xB0, controller, value]);
+            }
+        }
+
+        navigator.requestMIDIAccess()
+            .then(
+                (midi) => {
+                    const outputs = midi.outputs.values();
+                    for (const output of outputs) {
+                        if (output.name.includes("Pico")) {
+                            midiOutput = output;
+                            console.log("Found Pico MIDI output");
+                        }
+                    }
+                },
+                () => console.log("MIDI access denied")
+            );
+
+        document.getElementById('midi-interface').addEventListener('input', (event) => {
+            if (event.target.type === 'range') {
+                const controller = parseInt(event.target.dataset.cc);
+                const value = parseInt(event.target.value);
+                sendMidiMessage(controller, value);
+            }
+        });
+    </script>
+</body>
+</html>
