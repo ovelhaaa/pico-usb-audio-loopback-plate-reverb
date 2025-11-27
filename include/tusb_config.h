@@ -27,7 +27,7 @@ extern "C" {
 #define CFG_TUD_MIDI_TX_BUFSIZE 64
 
 #define CFG_TUD_AUDIO_ENABLE_INTERRUPT_EP                    1
-#define CFG_TUD_AUDIO_FUNC_1_DESC_LEN                        TUD_AUDIO_INTERFACE_STEREO_DESC_LEN
+#define CFG_TUD_AUDIO_FUNC_1_DESC_LEN                        TUD_AUDIO_MIDI_INTERFACE_DESC_LEN
 #define CFG_TUD_AUDIO_FUNC_1_N_FORMATS                       1
 
 #define CFG_TUD_AUDIO_FUNC_1_MAX_SAMPLE_RATE                 48000

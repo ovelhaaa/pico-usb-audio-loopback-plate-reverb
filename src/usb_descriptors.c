@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 #include "usb_descriptors.h"
+#include "usb_descriptors_composite.h"
 
 #include "bsp/board_api.h"
 #include "fx.h"
@@ -14,7 +15,7 @@
 #define USB_PID                                                                            \
     (0x4000 | _PID_MAP(CDC, 0) | _PID_MAP(MSC, 1) | _PID_MAP(HID, 2) | _PID_MAP(MIDI, 3) | \
      _PID_MAP(AUDIO, 4) | _PID_MAP(VENDOR, 5))
-#define CONFIG_TOTAL_LEN (TUD_CONFIG_DESC_LEN + CFG_TUD_AUDIO * TUD_AUDIO_INTERFACE_STEREO_DESC_LEN + CFG_TUD_MIDI * TUD_MIDI_DESC_LEN)
+#define CONFIG_TOTAL_LEN (TUD_CONFIG_DESC_LEN + CFG_TUD_AUDIO * TUD_AUDIO_MIDI_INTERFACE_DESC_LEN)
 
 #define EPNUM_AUDIO_IN 0x01
 #define EPNUM_AUDIO_OUT 0x01
@@ -49,8 +50,7 @@ uint8_t const desc_configuration[] = {
     // Config number, interface count, string index, total length, attribute, power in mA
     TUD_CONFIG_DESCRIPTOR(1, ITF_NUM_TOTAL, 0, CONFIG_TOTAL_LEN, 0x00, 100),
     // Interface number, string index, EP Out & EP In address, EP size
-    TUD_AUDIO_INTERFACE_STEREO_DESCRIPTOR(4, EPNUM_AUDIO_OUT, EPNUM_AUDIO_IN | 0x80, EPNUM_AUDIO_INT | 0x80),
-    TUD_MIDI_DESCRIPTOR(ITF_NUM_MIDI, 5, EPNUM_MIDI_OUT, EPNUM_MIDI_IN | 0x80, 64)
+    TUD_AUDIO_MIDI_INTERFACE_DESCRIPTOR(4, EPNUM_AUDIO_OUT, EPNUM_AUDIO_IN | 0x80, EPNUM_AUDIO_INT | 0x80)
 };
 
 char const *string_desc_arr[] = {
